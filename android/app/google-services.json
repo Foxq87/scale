@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "900494688911",
+    "project_id": "calc-d5fdd",
+    "storage_bucket": "calc-d5fdd.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:900494688911:android:acfb40a77180d1ffae66fa",
+        "android_client_info": {
+          "package_name": "com.blog.cal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "900494688911-ajtgf2or1vb4oelt8maf1q34uvh4ds52.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDt3euASquil4qBfUu6ozWDLpGloJKdrjI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "900494688911-ajtgf2or1vb4oelt8maf1q34uvh4ds52.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "900494688911-9s44s0hu3coeik2d1duc7j860u6cu6bo.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.blog.cal"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
