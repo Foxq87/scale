@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:cal/constants.dart';
 import 'package:cal/widgets/loading.dart';
@@ -13,6 +12,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
+import '../models/question_model.dart';
 import 'home.dart';
 
 class MobileNewPostTab extends StatefulWidget {
@@ -64,7 +64,7 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
   bool showDropdown = false;
   String priority = 'Medium';
 
-  String uid = FirebaseAuth.instance.currentUser!.uid;
+
   String currentDocId = '';
   TextEditingController ideaController = TextEditingController();
   TextEditingController titleController = TextEditingController();
@@ -81,13 +81,26 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
     setState(() => this.image = imageTemporary);
   }
 
-  Future<void> handleDatabase() async {
-    final storageImage = FirebaseStorage.instance
-        .ref()
-        .child('thumbnails')
-        .child('$currentDocId.jpg');
-    var task = storageImage.putFile(image!);
-    url = await (await task.whenComplete(() => null)).ref.getDownloadURL();
+  Future<void> handleDatabase(String postId) async {
+    try {
+      final storageImage = FirebaseStorage.instance
+          .ref()
+          .child('thumbnails')
+          .child('$postId.jpg');
+      var task = storageImage.putFile(image!);
+
+      exploreRef.doc(postId).set({
+        "thumbnailUrl":
+            await (await task.whenComplete(() => null)).ref.getDownloadURL(),
+        "postId": postId,
+        "title": titleController.text,
+        "content": contentController.text,
+        "writerId": uid,
+        "views": [],
+        "timestamp": DateTime.now(),
+        "likes": {},
+      });
+    } catch (e) {}
   }
 
   @override
@@ -109,7 +122,7 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
                     .set({
                   "postId": postId,
                   "content": '',
-                  "thumbnailUrl": '',
+                  "thumbnailUrl": url,
                   "writerId": uid,
                   "views": [],
                   "timestamp": DateTime.now(),
@@ -171,7 +184,8 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
                       borderRadius: BorderRadius.circular(15),
                       hint: Text(
                         priority,
-                        style: TextStyle(color: Colors.white, fontSize: 17),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 17),
                       ),
                       underline: const SizedBox(),
                       dropdownColor: kDarkGreyColor,
@@ -232,7 +246,7 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
             height: 10,
           ),
           Container(
-            margin: EdgeInsets.symmetric(horizontal: 10),
+            margin: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
                 color: kDarkGreyColor,
                 border: Border.all(width: 2, color: Colors.grey[900]!),
@@ -240,7 +254,7 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
+                const SizedBox(
                   height: 10,
                 ),
                 Padding(
@@ -270,25 +284,26 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
                       SizedBox(
                         height: 32,
                         child: CupertinoButton(
-                            padding: EdgeInsets.symmetric(horizontal: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
                             color: kThemeColor,
-                            child: Text('Publish'),
+                            child: const Text('Publish'),
                             onPressed: () {
                               if (titleController.text.isEmpty) {
                                 showCupertinoDialog(
                                   barrierDismissible: true,
                                   context: context,
                                   builder: (context) => CupertinoTheme(
-                                    data: CupertinoThemeData(
+                                    data: const CupertinoThemeData(
                                         brightness: Brightness.dark),
                                     child: CupertinoAlertDialog(
-                                      title: Text("There's nothing to publish"),
+                                      title: const Text(
+                                          "There's nothing to publish"),
                                       actions: [
                                         CupertinoDialogAction(
                                             onPressed: () {
                                               Get.back();
                                             },
-                                            child: Text(
+                                            child: const Text(
                                               'Back',
                                               style:
                                                   TextStyle(color: Colors.blue),
@@ -302,10 +317,10 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
                                   barrierDismissible: true,
                                   context: context,
                                   builder: (context) => CupertinoTheme(
-                                    data: CupertinoThemeData(
+                                    data: const CupertinoThemeData(
                                         brightness: Brightness.dark),
                                     child: CupertinoAlertDialog(
-                                      title: Text("Upload thumbnail"),
+                                      title: const Text("Upload thumbnail"),
                                       content: Text(
                                           'Before pulishing "${titleController.text}" publicly available you have to upload a thumbnail'),
                                       actions: [
@@ -313,28 +328,29 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
                                             onPressed: () {
                                               Get.back();
                                             },
-                                            child: Text(
+                                            child: const Text(
                                               'Cancel',
                                               style:
                                                   TextStyle(color: kThemeColor),
                                             )),
                                         CupertinoDialogAction(
-                                            onPressed: () {
+                                            onPressed: () async {
                                               // publishPost(currentDocId);
                                               //publish document
                                               pickImage();
                                               Get.back();
-                                              showCupertinoDialog(
+                                              await showCupertinoDialog(
                                                 barrierDismissible: true,
                                                 context: context,
                                                 builder: (context) =>
                                                     CupertinoTheme(
-                                                  data: CupertinoThemeData(
-                                                      brightness:
-                                                          Brightness.dark),
+                                                  data:
+                                                      const CupertinoThemeData(
+                                                          brightness:
+                                                              Brightness.dark),
                                                   child: CupertinoAlertDialog(
-                                                    title:
-                                                        Text("Are you sure?"),
+                                                    title: const Text(
+                                                        "Are you sure?"),
                                                     content: Text(
                                                         'You are making "${titleController.text}" publicly available.'),
                                                     actions: [
@@ -342,7 +358,7 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
                                                           onPressed: () {
                                                             Get.back();
                                                           },
-                                                          child: Text(
+                                                          child: const Text(
                                                             'Cancel',
                                                             style: TextStyle(
                                                                 color:
@@ -350,13 +366,13 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
                                                           )),
                                                       CupertinoDialogAction(
                                                           onPressed: () {
-                                                            handleDatabase();
-                                                            publishPost(
+                                                            handleDatabase(
                                                                 currentDocId);
+
                                                             //publish document
                                                             Get.back();
                                                           },
-                                                          child: Text(
+                                                          child: const Text(
                                                             'Publish',
                                                             style: TextStyle(
                                                                 color:
@@ -368,7 +384,7 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
                                               );
                                               Get.back();
                                             },
-                                            child: Text(
+                                            child: const Text(
                                               'Upload',
                                               style:
                                                   TextStyle(color: greenColor),
@@ -388,7 +404,7 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
                     setState(() {
                       isSaved = false;
                     });
-                    await Future.delayed(Duration(seconds: 1));
+                    await Future.delayed(const Duration(seconds: 1));
                     try {
                       updateDatabase();
                     } catch (e) {}
@@ -412,7 +428,7 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
                     setState(() {
                       isSaved = false;
                     });
-                    await Future.delayed(Duration(seconds: 1));
+                    await Future.delayed(const Duration(seconds: 1));
                     try {
                       updateDatabase();
                     } catch (e) {}
@@ -432,7 +448,7 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
                     color: Colors.transparent,
                   ),
                 ),
-                SizedBox(
+                const SizedBox(
                   height: 5,
                 ),
               ],
@@ -444,7 +460,7 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
   }
 
   void updateDatabase() {
-    String postId = Uuid().v4();
+    String postId = const Uuid().v4();
 
     print(currentDocId);
     personalWritings
@@ -477,20 +493,6 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
     });
   }
 
-  void publishPost(String postId) {
-    try {
-      exploreRef.doc(postId).set({
-        "postId": postId,
-        "title": titleController.text,
-        "content": contentController.text,
-        "thumbnailUrl": url,
-        "writerId": uid,
-        "views": [],
-        "timestamp": DateTime.now(),
-      });
-    } catch (e) {}
-  }
-
   idea(
     String idea,
     String priority,
@@ -508,7 +510,7 @@ class _MobileNewPostTabState extends State<MobileNewPostTab> {
         });
       },
       child: Slidable(
-        endActionPane: ActionPane(motion: BehindMotion(), children: [
+        endActionPane: ActionPane(motion: const BehindMotion(), children: [
           SlidableAction(
               icon: CupertinoIcons.delete,
               foregroundColor: kThemeColor,

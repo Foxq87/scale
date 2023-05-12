@@ -47,7 +47,12 @@ class _RegisterState extends State<Register> {
           "creation": DateTime.now(),
           "topics": [],
           "imageUrl":
-              "https://i.pinimg.com/474x/21/d2/9f/21d29f70c61cdfc6a90cf1e53004d22e.jpg"
+              "https://i.pinimg.com/474x/21/d2/9f/21d29f70c61cdfc6a90cf1e53004d22e.jpg",
+          "school": '',
+          "isDeveloper": false,
+          "isVerified": false,
+          "bio": '',
+          "bannerUrl": '',
         });
       });
     } on FirebaseAuthException catch (e) {

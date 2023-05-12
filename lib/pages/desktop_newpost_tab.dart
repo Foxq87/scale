@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../constants.dart';
+import '../models/question_model.dart';
 import 'desktop_app.dart';
 import 'home.dart';
 
@@ -15,7 +16,7 @@ class DesktopNewPostTab extends StatefulWidget {
 }
 
 class _DesktopNewPostTabState extends State<DesktopNewPostTab> {
-  String uid = FirebaseAuth.instance.currentUser!.uid;
+
 
   TextEditingController titleController = TextEditingController();
   TextEditingController contentController = TextEditingController();
@@ -45,8 +46,6 @@ class _DesktopNewPostTabState extends State<DesktopNewPostTab> {
                         "thumbnailUrl":
                             'https://cdn.dribbble.com/userupload/4006281/file/original-1fa5190f4c0fe085a852e6d0e46f739f.png?compress=1&resize=1024x1024',
                         "writerId": uid,
-                        "writerImageUrl":
-                            "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png",
                         "views": 1,
                         "timestamp": DateTime.now(),
                       });

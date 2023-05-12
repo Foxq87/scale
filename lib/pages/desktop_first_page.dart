@@ -26,6 +26,7 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:unicons/unicons.dart';
 
+import '../models/question_model.dart';
 import 'create.dart';
 import 'desktop_home_tab.dart';
 import 'desktop_profile_tab.dart';
@@ -38,7 +39,7 @@ class DesktopFirstPage extends StatefulWidget {
 }
 
 class _DesktopFirstPageState extends State<DesktopFirstPage> {
-  String uid = FirebaseAuth.instance.currentUser!.uid;
+
   int currentIndex = 0;
   final GlobalKey<ScaffoldState> _key = GlobalKey();
   bool isExpanded = false;
@@ -256,7 +257,6 @@ class _DesktopFirstPageState extends State<DesktopFirstPage> {
                                   Provider.of<Data>(context, listen: false)
                                       .setScreen(Account(
                                     profileId: user.id,
-                                    previousPageTitle: 'Home',
                                   ));
                                 },
                                 child: Container(

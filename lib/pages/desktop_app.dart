@@ -22,7 +22,7 @@ class DesktopApp extends StatefulWidget {
 
 
 class _DesktopAppState extends State<DesktopApp> {
-  String uid = FirebaseAuth.instance.currentUser!.uid;
+
   int _currentIndex = 0;
   List screens = [
     //Home

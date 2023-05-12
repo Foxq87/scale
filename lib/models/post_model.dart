@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cal/constants.dart';
+import 'package:cal/models/question_model.dart';
 import 'package:cal/models/user_model.dart';
 import 'package:cal/pages/account.dart';
 import 'package:cal/pages/create.dart';
@@ -19,6 +20,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:unicons/unicons.dart';
+import 'package:uuid/uuid.dart';
 
 import '../widgets/loading.dart';
 
@@ -236,6 +238,23 @@ class _PostMobileState extends State<PostMobile> {
                                   CupertinoDialogAction(
                                     onPressed: () {
                                       exploreRef.doc(widget.postId).delete();
+                                      //delete bookmark
+                                      usersRef.get().then((list) {
+                                        for (var element in list.docs) {
+                                          bookmarkRef
+                                              .doc(element.data()['id'])
+                                              .collection('bookmarks')
+                                              .where('postId',
+                                                  isEqualTo: widget.postId)
+                                              .get()
+                                              .then((doc) {
+                                            doc.docs.forEach((element) {
+                                              element.reference.delete();
+                                            });
+                                          });
+                                        }
+                                      });
+
                                       Get.back();
                                       Get.back();
                                     },
@@ -268,23 +287,21 @@ class _PostMobileState extends State<PostMobile> {
               child: CupertinoButton(
                 padding: EdgeInsets.zero,
                 onPressed: () {
-                  if (Platform.isIOS) {
-                    Navigator.push(
-                        context,
-                        CupertinoPageRoute(
-                          builder: (context) => PostDetailsMobile(
-                            previousPageTitle: 'Home',
-                            postId: widget.postId,
-                            title: widget.title,
-                            thumbnailUrl: widget.thumbnailUrl,
-                            content: widget.content,
-                            writerId: widget.writerId,
-                            timestamp: widget.timestamp,
-                            views: widget.views,
-                            likes: widget.likes,
-                          ),
-                        ));
-                  }
+                  Navigator.push(
+                      context,
+                      CupertinoPageRoute(
+                        builder: (context) => PostDetailsMobile(
+                          previousPageTitle: 'Home',
+                          postId: widget.postId,
+                          title: widget.title,
+                          thumbnailUrl: widget.thumbnailUrl,
+                          content: widget.content,
+                          writerId: widget.writerId,
+                          timestamp: widget.timestamp,
+                          views: widget.views,
+                          likes: widget.likes,
+                        ),
+                      ));
                 },
                 child: Column(
                   children: [
@@ -294,8 +311,7 @@ class _PostMobileState extends State<PostMobile> {
                         CupertinoButton(
                           padding: EdgeInsets.zero,
                           onPressed: () {
-                            Get.to(() => Account(
-                                profileId: user.id, previousPageTitle: 'Home'));
+                            Get.to(() => Account(profileId: user.id));
                           },
                           child: Row(
                             children: [
@@ -313,7 +329,8 @@ class _PostMobileState extends State<PostMobile> {
                               ),
                               Text(
                                 user.username,
-                                style: TextStyle(color: Colors.grey[300]),
+                                style: TextStyle(
+                                    color: Colors.grey[300], fontFamily: ''),
                               ),
                             ],
                           ),
@@ -321,9 +338,10 @@ class _PostMobileState extends State<PostMobile> {
                         Text(
                           formattedDate(widget.timestamp),
                           style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.bold),
+                            fontSize: 14,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.bold,
+                          ),
                         )
                       ],
                     ),
@@ -345,9 +363,9 @@ class _PostMobileState extends State<PostMobile> {
                                     child: Text(
                                       widget.title,
                                       style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 20),
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -362,9 +380,7 @@ class _PostMobileState extends State<PostMobile> {
                                     child: Text(
                                       widget.content,
                                       style: const TextStyle(
-                                          color: Colors.grey,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16),
+                                          color: Colors.grey, fontSize: 15),
                                       maxLines: 4,
                                       overflow: TextOverflow.clip,
                                     ),
@@ -466,7 +482,6 @@ class PostDetailsDesktop extends StatefulWidget {
 }
 
 class _PostDetailsDesktopState extends State<PostDetailsDesktop> {
-  String uid = FirebaseAuth.instance.currentUser!.uid;
   TextEditingController contentController = TextEditingController();
   @override
   void initState() {
@@ -520,8 +535,9 @@ class _PostDetailsDesktopState extends State<PostDetailsDesktop> {
                 CupertinoButton(
                   padding: EdgeInsets.zero,
                   onPressed: () {
-                    Get.to(() =>
-                        Account(profileId: user.id, previousPageTitle: 'Home'));
+                    Get.to(() => Account(
+                          profileId: user.id,
+                        ));
                   },
                   child: Row(
                     children: [
@@ -675,14 +691,36 @@ class _PostDetailsMobileState extends State<PostDetailsMobile> {
     return count;
   }
 
-  String uid = FirebaseAuth.instance.currentUser!.uid;
   @override
   void initState() {
     //increase view count
+
+    getIfBookmarked();
     increaseView();
     getLikeCount(widget.likes);
     isLiked = widget.likes[uid] == true;
     super.initState();
+  }
+
+  bool bookmarked = false;
+
+  getIfBookmarked() {
+    bookmarkRef
+        .doc(uid)
+        .collection('bookmarks')
+        .where('postId', isEqualTo: widget.postId)
+        .get()
+        .then((doc) {
+      if (doc.docs.isNotEmpty) {
+        setState(() {
+          bookmarked = true;
+        });
+      } else {
+        setState(() {
+          bookmarked = false;
+        });
+      }
+    });
   }
 
   void increaseView() {
@@ -705,9 +743,25 @@ class _PostDetailsMobileState extends State<PostDetailsMobile> {
       });
     } else if (!isliked) {
       exploreRef.doc(widget.postId).update({"likes.$uid": true});
-      // addLikeToActivityFeed();
+      addToActivityFeed() {
+        String notificationId = Uuid().v4();
+        notificationsRef
+            .doc(widget.writerId)
+            .collection('activities')
+            .doc(notificationId)
+            .set({
+          "type": "postLike",
+          "uid": uid,
+          "timestamp": DateTime.now(),
+          "notificationId": notificationId,
+          "scaleId": widget.postId,
+          "postId": '',
+        });
+      }
+
       bool isNotPostOwner = widget.writerId != uid;
       if (isNotPostOwner) {}
+
       setState(() {
         likeCount += 1;
         isLiked = true;
@@ -715,6 +769,31 @@ class _PostDetailsMobileState extends State<PostDetailsMobile> {
       });
     }
     getLikeCount(widget.likes);
+  }
+
+  addToBookmarks(String postId) {
+    bookmarkRef
+        .doc(uid)
+        .collection('bookmarks')
+        .where('postId', isEqualTo: postId)
+        .get()
+        .then((doc) {
+      if (doc.docs.isNotEmpty) {
+        bookmarkRef.doc(uid).collection('bookmarks').doc(postId).delete();
+        setState(() {
+          bookmarked = false;
+        });
+      } else {
+        bookmarkRef.doc(uid).collection('bookmarks').doc(postId).set({
+          "id": postId,
+          "postId": postId,
+          "scaleId": '',
+        });
+        setState(() {
+          bookmarked = true;
+        });
+      }
+    });
   }
 
   @override
@@ -761,7 +840,8 @@ class _PostDetailsMobileState extends State<PostDetailsMobile> {
                     padding: EdgeInsets.zero,
                     onPressed: () {
                       Get.to(() => Account(
-                          profileId: user.id, previousPageTitle: 'Home'));
+                            profileId: user.id,
+                          ));
                     },
                     child: Row(
                       children: [
@@ -770,6 +850,8 @@ class _PostDetailsMobileState extends State<PostDetailsMobile> {
                             child: Image.network(
                               user.imageUrl,
                               height: 35,
+                              width: 35,
+                              fit: BoxFit.cover,
                             )),
                         const SizedBox(
                           width: 10,
@@ -846,17 +928,21 @@ class _PostDetailsMobileState extends State<PostDetailsMobile> {
                       CupertinoButton(
                           padding: EdgeInsets.zero,
                           child: Text(
-                            String.fromCharCode(UniconsLine.bookmark.codePoint),
+                            String.fromCharCode(bookmarked
+                                ? CupertinoIcons.bookmark_fill.codePoint
+                                : CupertinoIcons.bookmark.codePoint),
                             style: TextStyle(
                               inherit: false,
                               color: Colors.grey[400],
                               fontSize: 21.0,
                               fontWeight: FontWeight.w900,
-                              fontFamily: UniconsLine.comment.fontFamily,
-                              package: UniconsLine.comment.fontPackage,
+                              fontFamily: CupertinoIcons.bookmark.fontFamily,
+                              package: CupertinoIcons.bookmark.fontPackage,
                             ),
                           ),
-                          onPressed: () {}),
+                          onPressed: () {
+                            addToBookmarks(widget.postId);
+                          }),
                       CupertinoButton(
                         padding: EdgeInsets.zero,
                         child: Text(
@@ -871,7 +957,10 @@ class _PostDetailsMobileState extends State<PostDetailsMobile> {
                           ),
                         ),
                         onPressed: () {
-                          Get.to(() => NewScale(postId: widget.postId));
+                          Get.to(() => NewScale(
+                                postId: widget.postId,
+                                scaleId: '',
+                              ));
                         },
                       ),
                       CupertinoButton(
@@ -953,7 +1042,7 @@ class _PostDetailsMobileState extends State<PostDetailsMobile> {
                   Container(),
                   SelectableText(
                     widget.content,
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(color: Colors.grey[200], fontSize: 18),
                     cursorColor: kThemeColor,
                   )
                 ],

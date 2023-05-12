@@ -1,6 +1,7 @@
 import 'package:cal/constants.dart';
 import 'package:cal/models/user_model.dart';
 import 'package:cal/pages/account.dart';
+import 'package:cal/pages/forum.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -96,9 +97,12 @@ drawer(UserModel user, BuildContext context) {
             padding: EdgeInsets.zero,
             onPressed: () {
               Get.back();
-              Get.to(() => Account(
-                    profileId: user.id,
-                    previousPageTitle: 'Home',
+              Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (context) => Account(
+                      profileId: user.id,
+                    ),
                   ));
             },
             child: const ListTile(
@@ -115,7 +119,6 @@ drawer(UserModel user, BuildContext context) {
             onPressed: () {
               Get.to(() => Account(
                     profileId: user.id,
-                    previousPageTitle: 'Home',
                   ));
             },
             child: const ListTile(
@@ -133,16 +136,15 @@ drawer(UserModel user, BuildContext context) {
           CupertinoButton(
             padding: EdgeInsets.zero,
             onPressed: () {
-              Get.to(() => Account(
-                    profileId: user.id,
-                    previousPageTitle: 'Home',
+              Get.to(() => Forum(
+                    previousPageTitle: 'Scale',
                   ));
             },
             child: const ListTile(
-              leading:
-                  Icon(CupertinoIcons.bookmark, color: Colors.white, size: 25),
+              leading: Icon(CupertinoIcons.bubble_left_bubble_right,
+                  color: Colors.white, size: 25),
               title: Text(
-                'Bookmarks',
+                'Forum',
                 style: TextStyle(
                   fontSize: 20,
                   color: Colors.white,
@@ -164,7 +166,6 @@ drawer(UserModel user, BuildContext context) {
             onPressed: () {
               Get.to(() => Account(
                     profileId: user.id,
-                    previousPageTitle: 'Home',
                   ));
             },
             child: const ListTile(
@@ -174,26 +175,6 @@ drawer(UserModel user, BuildContext context) {
                 style: TextStyle(
                   fontSize: 20,
                   color: Colors.amber,
-                ),
-              ),
-            ),
-          ),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: () {
-              Get.to(() => Account(
-                    profileId: user.id,
-                    previousPageTitle: 'Home',
-                  ));
-            },
-            child: const ListTile(
-              leading: Icon(CupertinoIcons.bubble_left_bubble_right,
-                  color: Colors.white, size: 25),
-              title: Text(
-                'Forum',
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.white,
                 ),
               ),
             ),

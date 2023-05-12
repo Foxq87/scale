@@ -1,37 +1,28 @@
+import 'package:cal/models/post_model.dart';
+import 'package:cal/pages/home.dart';
+import 'package:cal/widgets/loading.dart';
+import 'package:cal/widgets/nav_bar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 
 import '../constants.dart';
+import '../models/question_model.dart';
+import '../models/scale_model.dart';
+import '../models/user_model.dart';
 
-class Activity extends StatefulWidget {
-  const Activity({super.key});
+class Bookmarks extends StatefulWidget {
+  const Bookmarks({super.key});
 
   @override
-  State<Activity> createState() => _ActivityState();
+  State<Bookmarks> createState() => _BookmarksState();
 }
 
-class _ActivityState extends State<Activity> {
-  PageController pageController = PageController();
+class _BookmarksState extends State<Bookmarks> {
+  PageController pageController = PageController(initialPage: 0);
   bool isForYou = true;
-  @override
-  Widget build(BuildContext context) {
-    List screens = [
-      ListView(),
-      ListView(),
-    ];
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: appBar(),
-      body: PageView.builder(
-        controller: pageController,
-        itemBuilder: (context, index) {
-          return screens[index];
-        },
-      ),
-    );
-  }
 
   PreferredSize appBar() {
     return PreferredSize(
@@ -39,9 +30,10 @@ class _ActivityState extends State<Activity> {
         child: Column(
           children: [
             CupertinoNavigationBar(
+              previousPageTitle: 'Library',
               middle: const Text(
-                'Activity',
-                style: TextStyle(color: kThemeColor),
+                'Bookmarks',
+                style: TextStyle(color: Colors.white),
               ),
               backgroundColor:
                   const Color.fromARGB(255, 19, 19, 19).withOpacity(0.9),
@@ -72,7 +64,7 @@ class _ActivityState extends State<Activity> {
                           children: [
                             Expanded(child: Container()),
                             const Text(
-                              'All',
+                              'Articles',
                               style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 15,
@@ -87,14 +79,14 @@ class _ActivityState extends State<Activity> {
                                         color: Colors.transparent,
                                         borderRadius: kCircleBorderRadius),
                                     height: 4.3,
-                                    width: 40,
+                                    width: 70,
                                   )
                                 : Container(
                                     decoration: BoxDecoration(
                                         color: kThemeColor,
                                         borderRadius: kCircleBorderRadius),
                                     height: 4.3,
-                                    width: 40,
+                                    width: 70,
                                   )
                           ],
                         ),
@@ -113,7 +105,7 @@ class _ActivityState extends State<Activity> {
                           children: [
                             Expanded(child: Container()),
                             const Text(
-                              'Mentioned',
+                              'Scales',
                               style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 15,
@@ -125,14 +117,14 @@ class _ActivityState extends State<Activity> {
                             isForYou
                                 ? Container(
                                     height: 4.3,
-                                    width: 90,
+                                    width: 65,
                                     decoration: BoxDecoration(
                                         color: Colors.transparent,
                                         borderRadius: kCircleBorderRadius),
                                   )
                                 : Container(
                                     height: 4.3,
-                                    width: 90,
+                                    width: 65,
                                     decoration: BoxDecoration(
                                         color: kThemeColor,
                                         borderRadius: kCircleBorderRadius),
@@ -145,5 +137,105 @@ class _ActivityState extends State<Activity> {
             ),
           ],
         ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: appBar(),
+        backgroundColor: Colors.black,
+        body: PageView.builder(
+            controller: pageController,
+            itemBuilder: (context, index) {
+              List screens = [
+                articles(),
+                scales(),
+              ];
+              return screens[index];
+            }));
+  }
+
+  StreamBuilder<QuerySnapshot<Map<String, dynamic>>> scales() {
+    return StreamBuilder(
+        stream: bookmarkRef
+            .doc(uid)
+            .collection('bookmarks')
+            .where('scaleId', isNotEqualTo: '')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return loading();
+          }
+
+          return ListView.builder(
+            itemCount: snapshot.data!.docs.length,
+            itemBuilder: (context, index) {
+              return StreamBuilder(
+                  stream: scalesRef
+                      .doc(snapshot.data!.docs[index]['scaleId'])
+                      .snapshots(),
+                  builder: (context, scaleSnapshot) {
+                    if (!scaleSnapshot.hasData) {
+                      return loading();
+                    }
+                    final doc = scaleSnapshot.data!.data()!;
+                    return Scale(
+                      writerId: doc['writerId'],
+                      content: doc['content'],
+                      likes: doc['likes'],
+                      timestamp: doc['timestamp'],
+                      scaleId: doc['scaleId'],
+                      mediaUrl: doc['mediaUrl'],
+                      postId: doc['postId'],
+                      attachedScaleId: doc['attachedScaleId'],
+                      isReply: doc['isReply'],         repostedScaleId: doc['repostedScaleId'],
+                      dont: true,
+                      evenMe: true,
+                      currentScreen: Bookmarks,
+                    );
+                  });
+            },
+          );
+        });
+  }
+
+  StreamBuilder<QuerySnapshot<Map<String, dynamic>>> articles() {
+    return StreamBuilder(
+        stream: bookmarkRef
+            .doc(uid)
+            .collection('bookmarks')
+            .where('postId', isNotEqualTo: '')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return loading();
+          }
+
+          return ListView.builder(
+            itemCount: snapshot.data!.docs.length,
+            itemBuilder: (context, index) {
+              return StreamBuilder(
+                  stream: exploreRef
+                      .doc(snapshot.data!.docs[index]['postId'])
+                      .snapshots(),
+                  builder: (context, postSnapshot) {
+                    if (!postSnapshot.hasData) {
+                      return loading();
+                    }
+                    final doc = postSnapshot.data!.data()!;
+                    return PostMobile(
+                      writerId: doc['writerId'],
+                      content: doc['content'],
+                      likes: doc['likes'],
+                      timestamp: doc['timestamp'],
+                      postId: doc['postId'],
+                      thumbnailUrl: doc['thumbnailUrl'],
+                      title: doc['title'],
+                      views: doc['views'],
+                    );
+                  });
+            },
+          );
+        });
   }
 }

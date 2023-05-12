@@ -1,6 +1,7 @@
 import 'package:cal/constants.dart';
 import 'package:cal/models/scale_model.dart';
 import 'package:cal/pages/home.dart';
+import 'package:cal/pages/search.dart';
 import 'package:cal/widgets/drawer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,6 +11,7 @@ import 'package:get/get.dart';
 import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 
 import '../models/post_model.dart';
+import '../models/question_model.dart';
 import '../models/user_model.dart';
 import '../widgets/loading.dart';
 import 'new_scale.dart';
@@ -36,8 +38,10 @@ class _MobileFirstPageState extends State<MobileFirstPage> {
       isLoading = true;
     });
     QuerySnapshot postSnapshot = await exploreRef.get();
-    QuerySnapshot scaleSnapshot =
-        await scalesRef.orderBy('timestamp', descending: true).get();
+    QuerySnapshot scaleSnapshot = await scalesRef
+        .where('isReply', isEqualTo: false)
+        .orderBy('timestamp', descending: true)
+        .get();
     setState(() {
       posts = postSnapshot.docs
           .map((doc) => PostMobile(
@@ -62,9 +66,13 @@ class _MobileFirstPageState extends State<MobileFirstPage> {
                 mediaUrl: doc['mediaUrl'],
                 postId: doc['postId'],
                 attachedScaleId: doc['attachedScaleId'],
+                isReply: doc['isReply'],
+                repostedScaleId: doc['repostedScaleId'],
                 dont: true,
+                currentScreen: MobileFirstPage,
               ))
           .toList();
+      print(scales.length);
       isLoading = false;
     });
   }
@@ -72,11 +80,12 @@ class _MobileFirstPageState extends State<MobileFirstPage> {
   bool isForYou = true;
   PageController pageController = PageController(initialPage: 0);
 //code yamadn
-  String uid = FirebaseAuth.instance.currentUser!.uid;
+
   final GlobalKey<ScaffoldState> _key = GlobalKey();
 
   Future<void> _handleRefresh() async {
     fetchData();
+
     await Future.delayed(const Duration(seconds: 2));
   }
 
@@ -132,7 +141,7 @@ class _MobileFirstPageState extends State<MobileFirstPage> {
                                         children: [
                                           Expanded(child: Container()),
                                           const Text(
-                                            'Writings',
+                                            'Articles',
                                             style: TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 15,
@@ -148,7 +157,7 @@ class _MobileFirstPageState extends State<MobileFirstPage> {
                                                       borderRadius:
                                                           kCircleBorderRadius),
                                                   height: 4.3,
-                                                  width: 80,
+                                                  width: 70,
                                                 )
                                               : Container(
                                                   decoration: BoxDecoration(
@@ -156,7 +165,7 @@ class _MobileFirstPageState extends State<MobileFirstPage> {
                                                       borderRadius:
                                                           kCircleBorderRadius),
                                                   height: 4.3,
-                                                  width: 80,
+                                                  width: 70,
                                                 )
                                         ],
                                       ),
@@ -228,6 +237,7 @@ class _MobileFirstPageState extends State<MobileFirstPage> {
                   Get.to(
                       () => NewScale(
                             postId: '',
+                            scaleId: '',
                           ),
                       transition: Transition.downToUp);
                 }),
@@ -297,9 +307,11 @@ class _MobileFirstPageState extends State<MobileFirstPage> {
                     const SizedBox(
                       width: 10,
                     ),
-                    const Text(
-                      'daaaamn',
-                      style: TextStyle(color: Colors.white, fontSize: 17),
+                    Text(
+                      user.username,
+                      style: const TextStyle(
+                        color: Colors.white,
+                      ),
                     )
                   ]),
                 ),
@@ -310,7 +322,7 @@ class _MobileFirstPageState extends State<MobileFirstPage> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: scales,
-          )
+          ),
         ],
       );
 
@@ -346,9 +358,9 @@ class _MobileFirstPageState extends State<MobileFirstPage> {
                   const SizedBox(
                     width: 10,
                   ),
-                  const Text(
-                    'daaaamn',
-                    style: TextStyle(color: Colors.white, fontSize: 17),
+                  Text(
+                    user.username,
+                    style: const TextStyle(color: Colors.white, fontFamily: ''),
                   )
                 ]),
               ),
@@ -370,6 +382,28 @@ class _MobileFirstPageState extends State<MobileFirstPage> {
         child: Column(
           children: [
             CupertinoNavigationBar(
+              trailing: CupertinoButton(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: kDarkGreyColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        width: 1.4,
+                        color: Colors.grey[900]!,
+                      ),
+                    ),
+                    child: const Icon(
+                      CupertinoIcons.search,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  onPressed: () {
+                    Get.to(() => const Search(),
+                        transition: Transition.downToUp);
+                  }),
               leading: Padding(
                 padding: const EdgeInsets.only(bottom: 8.0, top: 0),
                 child: GestureDetector(
@@ -417,7 +451,7 @@ class _MobileFirstPageState extends State<MobileFirstPage> {
                           children: [
                             Expanded(child: Container()),
                             const Text(
-                              'Writings',
+                              'Articles',
                               style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 15,
@@ -432,14 +466,14 @@ class _MobileFirstPageState extends State<MobileFirstPage> {
                                         color: Colors.transparent,
                                         borderRadius: kCircleBorderRadius),
                                     height: 4.3,
-                                    width: 80,
+                                    width: 70,
                                   )
                                 : Container(
                                     decoration: BoxDecoration(
                                         color: kThemeColor,
                                         borderRadius: kCircleBorderRadius),
                                     height: 4.3,
-                                    width: 80,
+                                    width: 70,
                                   )
                           ],
                         ),

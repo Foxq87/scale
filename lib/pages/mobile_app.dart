@@ -15,7 +15,7 @@ import 'desktop_app.dart';
 import 'home.dart';
 import 'library.dart';
 import 'mobile_messages_tab.dart';
-import 'mobile_search_tab.dart';
+import 'mobile_notifications_tab.dart';
 
 class MobileApp extends StatefulWidget {
   const MobileApp({super.key});

@@ -1,11 +1,21 @@
+import 'dart:ui';
+
 import 'package:cal/constants.dart';
+import 'package:cal/models/question_model.dart';
+import 'package:cal/pages/home.dart';
 import 'package:cal/pages/testPage.dart';
+import 'package:cal/questions/questions.dart';
+import 'package:cal/state_managers/data.dart';
+import 'package:cal/widgets/loading.dart';
 import 'package:cal/widgets/nav_bar.dart';
+import 'package:cal/widgets/navigate_to.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 import 'package:toggle_list/toggle_list.dart';
 import 'package:unicons/unicons.dart';
+import 'package:uuid/uuid.dart';
 
 class Tests extends StatefulWidget {
   String previousPageTitle;
@@ -24,87 +34,88 @@ List lessons = [
   ["Chemistry", CupertinoIcons.lab_flask_solid, false]
 ];
 
-List topics = [
-  [
-    1,
-    [
-      [
-        1,
-        "Türk Dili ve Edebiyatına Giriş",
-        [
-          ["Edebiyat nedir?", 1, true],
-          ["Edebiyatın bilimle ve güzel sanatlarla ilişkisi", 2, false],
-          ["Metinlerin sınıflandırılması", 3, false, false],
-          ["İletişim ve ögeleri", 4, false],
-          ["Düşünceyi geliştirme yolları", 5, false],
-          ["Standart dil, ağız, şive, lehçe ile argo, jargon", 6, false]
-        ],
-        false
-      ],
-      [
-        2,
-        "Hikaye",
-        [
-          ["Cumhuriyet Dönemi’nden bir olay hikâyesi", 1, false],
-          ["Cumhuriyet Dönemi’nden bir durum hikâyesi", 2, false],
-          [
-            "Hikâyenin tanımı ve unsurları (kişiler, olay örgüsü, mekân, zaman, çatışma, konu, tema, anlatıcı ve bakış açısı)",
-            3,
-            false
-          ],
-          [
-            "Olay hikâyesi (Maupassant tarzı) ve durum hikâyesinin (Çehov tarzı) farkları",
-            4,
-            false
-          ],
-          ["Sunu hazırlamanın temel ilkeleri", 5, false],
-          ["İsim", 6, false],
-          ["Yazım (İmlâ) Kuralları", 7, false],
-          ["Noktalama İşaretleri", 8, false]
-        ],
-        false
-      ],
-    ]
-  ],
-  [
-    2,
-    [
-      [
-        1,
-        "Tarih ve Zaman",
-        [
-          ["Tarih Bilimi", 1, false],
-          ["Neden Tarih Öğreniyoruz?", 2, false],
-          ["Tarihe Nereden Bakılmalı?", 3, false],
-          ["Zaman ve İnsan", 4, false],
-        ],
-        false
-      ],
-      [
-        2,
-        "İnsanlığın İlk Dönemleri",
-        [
-          ["İnsanlığın İlk Dönemleri", 1, false],
-          ["Tarih Öncesinde Sözlü Kültür", 2, false],
-          ["Yazının İcadı ve Önemi", 3, false],
-          ["Kadim Dünyada Bilimler", 4, false],
-          ["İlk Çağ Medeniyetleri", 5, false],
-          ["İnsan ve Çevre", 6, false],
-          ["İlk Çağ’da Göçler", 7, false],
-          ["İlk Çağ’ın Tüccar Kavimleri", 8, false],
-          ["Devletler Doğuyor", 9, false],
-          ["İlk Çağ’da Hukuk", 10, false],
-        ],
-        false
-      ],
-    ]
-  ]
-];
+// List topics = [
+//   [
+//     1,
+//     [
+//       [
+//         1,
+//         "Türk Dili ve Edebiyatına Giriş",
+//         [
+//           ["Edebiyat nedir?", 1, true],
+//           ["Edebiyatın bilimle ve güzel sanatlarla ilişkisi", 2, false],
+//           ["Metinlerin sınıflandırılması", 3, false, false],
+//           ["İletişim ve ögeleri", 4, false],
+//           ["Düşünceyi geliştirme yolları", 5, false],
+//           ["Standart dil, ağız, şive, lehçe ile argo, jargon", 6, false]
+//         ],
+//         false
+//       ],
+//       [
+//         2,
+//         "Hikaye",
+//         [
+//           ["Cumhuriyet Dönemi’nden bir olay hikâyesi", 1, false],
+//           ["Cumhuriyet Dönemi’nden bir durum hikâyesi", 2, false],
+//           [
+//             "Hikâyenin tanımı ve unsurları (kişiler, olay örgüsü, mekân, zaman, çatışma, konu, tema, anlatıcı ve bakış açısı)",
+//             3,
+//             false
+//           ],
+//           [
+//             "Olay hikâyesi (Maupassant tarzı) ve durum hikâyesinin (Çehov tarzı) farkları",
+//             4,
+//             false
+//           ],
+//           ["Sunu hazırlamanın temel ilkeleri", 5, false],
+//           ["İsim", 6, false],
+//           ["Yazım (İmlâ) Kuralları", 7, false],
+//           ["Noktalama İşaretleri", 8, false]
+//         ],
+//         false
+//       ],
+//     ]
+//   ],
+//   [
+//     2,
+//     [
+//       [
+//         1,
+//         "Tarih ve Zaman",
+//         [
+//           ["Tarih Bilimi", 1, false],
+//           ["Neden Tarih Öğreniyoruz?", 2, false],
+//           ["Tarihe Nereden Bakılmalı?", 3, false],
+//           ["Zaman ve İnsan", 4, false],
+//         ],
+//         false
+//       ],
+//       [
+//         2,
+//         "İnsanlığın İlk Dönemleri",
+//         [
+//           ["İnsanlığın İlk Dönemleri", 1, false],
+//           ["Tarih Öncesinde Sözlü Kültür", 2, false],
+//           ["Yazının İcadı ve Önemi", 3, false],
+//           ["Kadim Dünyada Bilimler", 4, false],
+//           ["İlk Çağ Medeniyetleri", 5, false],
+//           ["İnsan ve Çevre", 6, false],
+//           ["İlk Çağ’da Göçler", 7, false],
+//           ["İlk Çağ’ın Tüccar Kavimleri", 8, false],
+//           ["Devletler Doğuyor", 9, false],
+//           ["İlk Çağ’da Hukuk", 10, false],
+//         ],
+//         false
+//       ],
+//     ]
+//   ]
+// ];
+
 int currentLesson = 0;
 double sliderValue = 20;
 double sliderValue2 = 25;
-String lesson = "Literature";
 
+int unit = 0;
 String subtopic = "Edebiyat nedir?";
 
 class _TestsState extends State<Tests> {
@@ -125,6 +136,29 @@ class _TestsState extends State<Tests> {
                   fontWeight: FontWeight.bold),
             ),
           ),
+          CupertinoButton(
+              child: Text('Upload Questions'),
+              onPressed: () {
+                // questionsRef.get().then((value) {
+                //   value.docs.forEach((element) {
+                //     element.reference.delete();
+                //   });
+                // });
+                for (var i = 0; i < questions.length; i++) {
+                  String questionId = Uuid().v4();
+
+                  questionsRef.doc(questionId).set({
+                    "paragraph": questions[i].paragraph,
+                    "title": questions[i].title,
+                    "choices": questions[i].choices,
+                    "shownTo": questions[i].shownTo,
+                    "unit": questions[i].unit,
+                    "lesson": questions[i].lesson,
+                    "imageUrl": questions[i].imageUrl,
+                    "answer": questions[i].answer,
+                  });
+                }
+              })
         ],
       ),
       ListView(
@@ -144,18 +178,28 @@ class _TestsState extends State<Tests> {
           ),
           SizedBox(
             height: 100,
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 15.0),
-              scrollDirection: Axis.horizontal,
-              itemCount: lessons.length,
-              itemBuilder: (context, index) {
-                return buildLessonItem(
-                  lessons[index][0],
-                  lessons[index][1],
-                  index,
-                );
-              },
-            ),
+            child: StreamBuilder(
+                stream: syllabusRef.doc('9').snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return loading();
+                  }
+                  List myLessons = snapshot.data!.data()!['lessons'];
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: myLessons.length,
+                    itemBuilder: (context, index) {
+                      Map myMap = myLessons[index];
+                      return buildLessonItem(
+                        myMap.keys.toList().first.toString(),
+                        lessons[index][1],
+                        index,
+                      );
+                    },
+                  );
+                }),
           ),
           const Padding(
             padding: EdgeInsets.only(left: 15.0),
@@ -171,103 +215,76 @@ class _TestsState extends State<Tests> {
             height: 15,
           ),
           Container(
+            padding: EdgeInsets.only(top: 3, bottom: 10),
             decoration: BoxDecoration(
                 color: kDarkGreyColor,
                 borderRadius: BorderRadius.circular(13),
                 border: Border.all(width: 2, color: Colors.grey[900]!)),
-            child: ToggleList(
-              innerPadding: const EdgeInsets.symmetric(horizontal: 15),
-              scrollPhysics: const NeverScrollableScrollPhysics(),
-              scrollPosition: AutoScrollPosition.end,
-              shrinkWrap: true,
-              toggleAnimationDuration: const Duration(milliseconds: 200),
-              scrollDuration: const Duration(milliseconds: 20),
-              trailing: const Padding(
-                padding: EdgeInsets.all(10),
-                child: Icon(
-                  CupertinoIcons.chevron_down,
-                  color: Colors.white,
-                ),
-              ),
-              children: List.generate(
-                topics[currentLesson][1].length,
-                (i) => ToggleListItem(
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            child: StreamBuilder(
+                stream: syllabusRef.doc('9').snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return loading();
+                  }
+                  List myLessons = snapshot.data!.data()!['lessons'];
+                  Map myMap = myLessons[currentLesson];
+                  return ListView(
+                    shrinkWrap: true,
                     children: List.generate(
-                        topics[currentLesson][1][i][2].length,
-                        (j) => Container(
-                              margin: EdgeInsets.only(top: 10),
-                              decoration: BoxDecoration(
-                                  border: topics[currentLesson][1][i][2][j][2]
-                                      ? Border.all(width: 2, color: kThemeColor)
-                                      : Border.all(
-                                          width: 2, color: Colors.grey[900]!),
-                                  borderRadius: BorderRadius.circular(15)),
-                              child: CupertinoButton(
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "${topics[currentLesson][1][i][2][j][1]} - ",
-                                        style: const TextStyle(
-                                            color: greenColor, fontSize: 18),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          topics[currentLesson][1][i][2][j][0]
-                                              .toString(),
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                          ),
+                        myMap.values.toList().first.length,
+                        (i) => CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              onPressed: () {
+                                setState(() {
+                                  subtopic =
+                                      myMap.values.toList().first[i].toString();
+                                  unit = myMap.values
+                                      .toList()
+                                      .first
+                                      .indexOf(subtopic);
+                                  print(unit);
+                                });
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                    vertical: 12, horizontal: 10),
+                                margin: EdgeInsets.fromLTRB(10, 7, 10, 0),
+                                decoration: BoxDecoration(
+                                    border: subtopic ==
+                                            myMap.values
+                                                .toList()
+                                                .first[i]
+                                                .toString()
+                                        ? Border.all(
+                                            width: 2, color: kThemeColor)
+                                        : Border.all(
+                                            width: 2, color: Colors.grey[900]!),
+                                    borderRadius: BorderRadius.circular(15)),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "${i + 1} - ",
+                                      style: const TextStyle(
+                                          color: greenColor, fontSize: 18),
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        myMap.values
+                                            .toList()
+                                            .first[i]
+                                            .toString(),
+                                        style: TextStyle(
+                                          color: Colors.white,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      for (var lesson = 0;
-                                          lesson < topics.length;
-                                          lesson++) {
-                                        for (var topicss = 0;
-                                            topicss < topics[lesson].length;
-                                            topicss++) {
-                                          for (var element in topics[lesson][1]
-                                              [topicss][2]) {
-                                            element[2] = false;
-                                          }
-                                        }
-                                      }
-
-                                      topics[currentLesson][1][i][2][j][2] =
-                                          true;
-                                      subtopic =
-                                          topics[currentLesson][1][i][2][j][0];
-                                    });
-                                  }),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             )),
-                  ),
-                  title: Row(
-                    children: [
-                      Text(
-                        "${topics[currentLesson][1][i][0]} - ",
-                        style:
-                            const TextStyle(color: kThemeColor, fontSize: 18),
-                      ),
-                      Expanded(
-                        child: Text(
-                          topics[currentLesson][1][i][1],
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 18),
-                        ),
-                      ),
-                    ],
-                  ),
-                  onExpansionChanged: (index, newValue) {},
-                ),
-              ),
-            ),
+                  );
+                }),
           ),
         ],
       ),
@@ -510,16 +527,20 @@ class _TestsState extends State<Tests> {
                                     CupertinoDialogAction(
                                         onPressed: () {
                                           Get.back();
-
+                                          Provider.of<Data>(context,
+                                                  listen: false)
+                                              .updateQuestionCount(
+                                                  sliderValue.toInt());
                                           Get.to(
-                                            () => TestPage(
-                                              lesson: lesson,
-                                              questionCount:
-                                                  sliderValue.toInt(),
-                                              time: sliderValue2.toInt(),
-                                              subtopic: subtopic,
-                                            ),
-                                          );
+                                              () => TestPage(
+                                                    lesson: currentLesson,
+                                                    questionCount:
+                                                        sliderValue.toInt(),
+                                                    time: sliderValue2.toInt(),
+                                                    unit: unit,
+                                                  ),
+                                              transition: Transition.downToUp,
+                                              popGesture: false);
                                         },
                                         child: const Text(
                                           "Başlat",
@@ -548,6 +569,8 @@ class _TestsState extends State<Tests> {
       ),
     );
   }
+
+  updateDatabase() {}
 
   buildLessonItem(
     String title,
@@ -590,7 +613,6 @@ class _TestsState extends State<Tests> {
             });
           }
           setState(() {
-            lesson = title;
             currentLesson = index;
             lessons[index][2] = true;
           });

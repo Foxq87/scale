@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cal/pages/create.dart';
 import 'package:cal/pages/mobile_first_page.dart';
 import 'package:cal/pages/mobile_app.dart';
@@ -24,20 +26,30 @@ final personalWritings =
 final Reference storageRefc = FirebaseStorage.instance.ref();
 final usersRef = FirebaseFirestore.instance.collection('users');
 final ideaRef = FirebaseFirestore.instance.collection('ideas');
+final questionsRef = FirebaseFirestore.instance.collection('questions');
+final bookmarkRef = FirebaseFirestore.instance.collection('bookmarks');
+final notificationsRef = FirebaseFirestore.instance.collection('notifications');
+final syllabusRef = FirebaseFirestore.instance.collection('syllabus');
+final forumRef = FirebaseFirestore.instance.collection('forum');
 
 class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth < 600) {
-            return MobileApp();
-          } else {
-            return DesktopApp();
-          }
-        },
-      ),
+    return
+        // Scaffold(
+        //   body: LayoutBuilder(
+        //     builder: (context, constraints) {
+        //       if (constraints.maxWidth < 600) {
+        //         return MobileApp();
+        //       } else {
+        //         return DesktopApp();
+        //       }
+        //     },
+        //   ),
+        // );
+
+        Scaffold(
+      body: MobileApp(),
     );
   }
 }

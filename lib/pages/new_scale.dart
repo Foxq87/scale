@@ -1,13 +1,16 @@
 import 'dart:io';
-import 'dart:ui';
+
 import 'package:cal/models/post_model.dart';
+import 'package:cal/models/scale_model.dart';
 import 'package:cal/models/user_model.dart';
 import 'package:cal/pages/home.dart';
 import 'package:cal/widgets/loading.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../models/question_model.dart';
+import '../widgets/photo.dart';
 import '/widgets/snackbar.dart';
 import '/constants.dart';
-
+import 'package:timeago/timeago.dart' as timeago;
 import 'package:feather_icons/feather_icons.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -18,9 +21,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
+import 'account.dart';
+
 class NewScale extends StatefulWidget {
   String postId;
-  NewScale({Key? key, required this.postId}) : super(key: key);
+  String scaleId;
+  NewScale({Key? key, required this.postId, required this.scaleId})
+      : super(key: key);
 
   @override
   State<NewScale> createState() => _NewScaleState();
@@ -82,21 +89,25 @@ class _NewScaleState extends State<NewScale> {
     required String tweet,
     required String scaleId,
     required String postId,
+    required String repostedScaleId,
   }) async {
     if (image != null) {
       scalesRef.doc(scaleId).set({
         "scaleId": scaleId,
+        "repostedScaleId": repostedScaleId,
         "writerId": uid,
         "content": tweet,
         "timestamp": DateTime.now(),
         "postId": postId,
         "likes": {},
         "mediaUrl": '',
+        "isReply": false,
         "attachedScaleId": [],
       });
       await handleImage(scaleId);
     } else {
       scalesRef.doc(scaleId).set({
+        "repostedScaleId": repostedScaleId,
         "scaleId": scaleId,
         "writerId": uid,
         "content": tweet,
@@ -104,6 +115,7 @@ class _NewScaleState extends State<NewScale> {
         "timestamp": DateTime.now(),
         "postId": postId,
         "likes": {},
+        "isReply": false,
         "attachedScaleId": [],
       });
     }
@@ -117,7 +129,6 @@ class _NewScaleState extends State<NewScale> {
     return url;
   }
 
-  String uid = FirebaseAuth.instance.currentUser!.uid;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -163,6 +174,7 @@ class _NewScaleState extends State<NewScale> {
                                     tweet: tweetController.text,
                                     scaleId: scaleId,
                                     postId: widget.postId,
+                                    repostedScaleId: widget.scaleId,
                                   );
 
                                   tweetController.clear();
@@ -284,9 +296,7 @@ class _NewScaleState extends State<NewScale> {
                               Text(
                                 audienceTxt,
                                 style: const TextStyle(
-                                    color: kThemeColor,
-                                    fontFamily: 'poppinsBold',
-                                    fontSize: 16),
+                                    color: kThemeColor, fontSize: 16),
                               ),
                               const Icon(
                                 Icons.keyboard_arrow_down_rounded,
@@ -314,9 +324,6 @@ class _NewScaleState extends State<NewScale> {
                         });
                       }
                     },
-                    inputFormatters: [
-                      FilteringTextInputFormatter.singleLineFormatter
-                    ],
                     minLines: 1,
                     maxLines: 12,
                     maxLength: 400,
@@ -405,192 +412,677 @@ class _NewScaleState extends State<NewScale> {
                                           ),
                                         );
                                       },
-                                      child: AspectRatio(
-                                        aspectRatio: 10 / 3,
-                                        child: Container(
-                                          margin: EdgeInsets.only(
-                                              right: 20, top: 4, left: 20),
-                                          decoration: BoxDecoration(
-                                              color: kDarkGreyColor,
-                                              border: Border.all(
-                                                  width: 2,
-                                                  color: Colors.grey[900]!),
-                                              borderRadius:
-                                                  BorderRadius.circular(20)),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Expanded(
-                                                child: Padding(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                    horizontal: 10.0,
-                                                    vertical: 10,
-                                                  ),
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Row(
-                                                        children: [
-                                                          ClipRRect(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        5),
-                                                            child:
-                                                                Image.network(
-                                                              writer.imageUrl,
-                                                              height: 25,
-                                                              width: 25,
-                                                              fit: BoxFit.cover,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            height: 100,
+                                            margin: const EdgeInsets.only(
+                                                right: 20, top: 4, left: 20),
+                                            decoration: BoxDecoration(
+                                                color: kDarkGreyColor,
+                                                border: Border.all(
+                                                    width: 2,
+                                                    color: Colors.grey[900]!),
+                                                borderRadius:
+                                                    BorderRadius.circular(20)),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Expanded(
+                                                  child: Padding(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                            horizontal: 10,
+                                                            vertical: 10),
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Row(
+                                                          children: [
+                                                            ClipRRect(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          5),
+                                                              child:
+                                                                  Image.network(
+                                                                writer.imageUrl,
+                                                                height: 25,
+                                                                width: 25,
+                                                                fit: BoxFit
+                                                                    .cover,
+                                                              ),
                                                             ),
-                                                          ),
-                                                          SizedBox(
-                                                            width: 5,
-                                                          ),
-                                                          Text(
-                                                            writer.username,
-                                                            style: TextStyle(
-                                                              color: Colors
-                                                                  .grey[350],
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w500,
+                                                            const SizedBox(
+                                                              width: 5,
                                                             ),
-                                                          ),
-                                                          writer.isVerified ||
-                                                                  writer
-                                                                      .isDeveloper
-                                                              ? Row(
-                                                                  children: [
-                                                                    SizedBox(
-                                                                      width: 5,
-                                                                    ),
-                                                                    Text(
-                                                                      String.fromCharCode(CupertinoIcons
-                                                                          .checkmark_seal_fill
-                                                                          .codePoint),
-                                                                      style:
-                                                                          TextStyle(
-                                                                        inherit:
-                                                                            false,
-                                                                        color: writer.isDeveloper &&
-                                                                                writer.isVerified
-                                                                            ? kThemeColor
-                                                                            : Colors.blue,
-                                                                        fontSize:
-                                                                            15.0,
-                                                                        fontWeight:
-                                                                            FontWeight.w900,
-                                                                        fontFamily: CupertinoIcons
-                                                                            .heart
-                                                                            .fontFamily,
-                                                                        package: CupertinoIcons
-                                                                            .heart
-                                                                            .fontPackage,
+                                                            Text(
+                                                              writer.username,
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .grey[350],
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
+                                                              ),
+                                                            ),
+                                                            writer.isVerified ||
+                                                                    writer
+                                                                        .isDeveloper
+                                                                ? Row(
+                                                                    children: [
+                                                                      const SizedBox(
+                                                                        width:
+                                                                            5,
                                                                       ),
-                                                                    ),
-                                                                  ],
-                                                                )
-                                                              : SizedBox(),
-                                                        ],
-                                                      ),
-                                                      SizedBox(
-                                                        height: 5,
-                                                      ),
-                                                      Row(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          Expanded(
-                                                            child: Text(
-                                                              snapshot.data!
-                                                                      .data()![
-                                                                  'title'],
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
-                                                              style: const TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 16),
-                                                              maxLines: 1,
+                                                                      Text(
+                                                                        String.fromCharCode(CupertinoIcons
+                                                                            .checkmark_seal_fill
+                                                                            .codePoint),
+                                                                        style:
+                                                                            TextStyle(
+                                                                          inherit:
+                                                                              false,
+                                                                          color: writer.isDeveloper && writer.isVerified
+                                                                              ? kThemeColor
+                                                                              : Colors.blue,
+                                                                          fontSize:
+                                                                              15.0,
+                                                                          fontWeight:
+                                                                              FontWeight.w900,
+                                                                          fontFamily: CupertinoIcons
+                                                                              .heart
+                                                                              .fontFamily,
+                                                                          package: CupertinoIcons
+                                                                              .heart
+                                                                              .fontPackage,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  )
+                                                                : const SizedBox(),
+                                                          ],
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 5,
+                                                        ),
+                                                        Row(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          children: [
+                                                            Expanded(
+                                                              child: Text(
+                                                                snapshot.data!
+                                                                        .data()![
+                                                                    'title'],
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                                style: const TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    fontSize:
+                                                                        16),
+                                                                maxLines: 1,
+                                                              ),
                                                             ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      const SizedBox(
-                                                        height: 10,
-                                                      ),
-                                                      Row(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          Expanded(
-                                                            child: Text(
-                                                              snapshot.data!
-                                                                      .data()![
-                                                                  'content'],
-                                                              style: const TextStyle(
-                                                                  color: Colors
-                                                                      .grey,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 14),
-                                                              maxLines: 2,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
+                                                          ],
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 5,
+                                                        ),
+                                                        Row(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          children: [
+                                                            Expanded(
+                                                              child: Text(
+                                                                snapshot.data!
+                                                                        .data()![
+                                                                    'content'],
+                                                                style: const TextStyle(
+                                                                    color: Colors
+                                                                        .grey,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    fontSize:
+                                                                        14),
+                                                                maxLines: 1,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                              ),
                                                             ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      SizedBox(
-                                                        height: 5,
-                                                      ),
-                                                    ],
+                                                          ],
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 5,
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
                                                 ),
-                                              ),
-                                              SizedBox(
-                                                width: 20,
-                                              ),
-                                              ClipRRect(
-                                                borderRadius: BorderRadius.only(
-                                                    topRight:
-                                                        Radius.circular(18),
-                                                    bottomRight:
-                                                        Radius.circular(18)),
-                                                child: Image.network(
-                                                  snapshot.data!
-                                                      .data()!['thumbnailUrl'],
-                                                  fit: BoxFit.cover,
+                                                const SizedBox(
+                                                  width: 20,
                                                 ),
-                                              ),
-                                            ],
+                                                ClipRRect(
+                                                  borderRadius:
+                                                      const BorderRadius.only(
+                                                          topRight:
+                                                              Radius.circular(
+                                                                  18),
+                                                          bottomRight:
+                                                              Radius.circular(
+                                                                  18)),
+                                                  child: Image.network(
+                                                    snapshot.data!.data()![
+                                                        'thumbnailUrl'],
+                                                    height: 100,
+                                                    width: 100,
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
+                                          CupertinoButton(
+                                              padding: EdgeInsets.symmetric(
+                                                  horizontal: 20),
+                                              child: Icon(
+                                                  CupertinoIcons.clear_circled),
+                                              onPressed: () {
+                                                setState(() {
+                                                  widget.postId = '';
+                                                });
+                                              })
+                                        ],
                                       ),
                                     ),
+                                  ],
+                                );
+                              });
+                        }),
+                widget.scaleId.isEmpty
+                    ? const SizedBox()
+                    : FutureBuilder(
+                        future: scalesRef.doc(widget.scaleId).get(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return loading();
+                          }
+
+                          return FutureBuilder(
+                              future: usersRef
+                                  .doc(snapshot.data!.data()!['writerId'])
+                                  .get(),
+                              builder: (context, writerSnapshot) {
+                                if (!writerSnapshot.hasData) {
+                                  return loading();
+                                }
+                                UserModel writer = UserModel.fromDocument(
+                                    writerSnapshot.data!);
+                                final documentSnapshot = snapshot.data!.data()!;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     CupertinoButton(
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 20),
-                                        child:
-                                            Icon(CupertinoIcons.clear_circled),
-                                        onPressed: () {
-                                          setState(() {
-                                            widget.postId = '';
-                                          });
-                                        })
+                                      padding: EdgeInsets.zero,
+                                      onPressed: () {
+                                        Get.to(
+                                          () => ScaleDetails(
+                                            currentScreen: NewScale,
+                                            repostedScaleId: documentSnapshot[
+                                                'repostedScaleId'],
+                                            isReply:
+                                                documentSnapshot['isReply'],
+                                            attachedScaleId: documentSnapshot[
+                                                'attachedScaleId'],
+                                            mediaUrl:
+                                                documentSnapshot['mediaUrl'],
+                                            scaleId:
+                                                documentSnapshot['scaleId'],
+                                            focus: false,
+                                            postId: documentSnapshot['postId'],
+                                            content:
+                                                documentSnapshot['content'],
+                                            writerId:
+                                                documentSnapshot['writerId'],
+                                            timestamp:
+                                                documentSnapshot['timestamp'],
+                                            likes: documentSnapshot['likes'],
+                                          ),
+                                        );
+                                      },
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            padding:
+                                                EdgeInsets.only(bottom: 15),
+                                            margin: EdgeInsets.symmetric(
+                                                horizontal: 20),
+                                            decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(15),
+                                                border: Border.all(
+                                                    width: 1.5,
+                                                    color: Colors.grey[900]!)),
+                                            child: CupertinoButton(
+                                              padding:
+                                                  const EdgeInsets.fromLTRB(
+                                                      15, 10, 15, 4),
+                                              onPressed: () {
+                                                Navigator.push(
+                                                    context,
+                                                    CupertinoPageRoute(
+                                                      builder: (context) =>
+                                                          ScaleDetails(
+                                                        repostedScaleId:
+                                                            documentSnapshot[
+                                                                'repostedScaleId'],
+                                                        currentScreen: NewScale,
+                                                        isReply:
+                                                            documentSnapshot[
+                                                                'isReply'],
+                                                        attachedScaleId:
+                                                            documentSnapshot[
+                                                                'attachedScaleId'],
+                                                        mediaUrl:
+                                                            documentSnapshot[
+                                                                'mediaUrl'],
+                                                        scaleId:
+                                                            documentSnapshot[
+                                                                'scaleId'],
+                                                        focus: false,
+                                                        postId:
+                                                            documentSnapshot[
+                                                                'postId'],
+                                                        content:
+                                                            documentSnapshot[
+                                                                'content'],
+                                                        writerId:
+                                                            documentSnapshot[
+                                                                'writerId'],
+                                                        timestamp:
+                                                            documentSnapshot[
+                                                                'timestamp'],
+                                                        likes: documentSnapshot[
+                                                            'likes'],
+                                                      ),
+                                                    ));
+                                              },
+                                              child: IntrinsicHeight(
+                                                child: Row(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Column(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        CupertinoButton(
+                                                          onPressed: () {
+                                                            Navigator.push(
+                                                                context,
+                                                                CupertinoPageRoute(
+                                                                  builder:
+                                                                      (context) =>
+                                                                          Account(
+                                                                    profileId:
+                                                                        writer
+                                                                            .id,
+                                                                  ),
+                                                                ));
+                                                          },
+                                                          padding:
+                                                              EdgeInsets.zero,
+                                                          child: CircleAvatar(
+                                                            radius: 17,
+                                                            backgroundImage:
+                                                                NetworkImage(writer
+                                                                    .imageUrl),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(
+                                                      width: 15,
+                                                    ),
+                                                    Flexible(
+                                                      child: Column(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          CupertinoButton(
+                                                            onPressed: () {
+                                                              Navigator.push(
+                                                                  context,
+                                                                  CupertinoPageRoute(
+                                                                    builder:
+                                                                        (context) =>
+                                                                            Account(
+                                                                      profileId:
+                                                                          writer
+                                                                              .id,
+                                                                    ),
+                                                                  ));
+                                                            },
+                                                            padding:
+                                                                EdgeInsets.zero,
+                                                            child: Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .spaceBetween,
+                                                              children: [
+                                                                Row(
+                                                                  children: [
+                                                                    Text(
+                                                                      writer
+                                                                          .username,
+                                                                      style: TextStyle(
+                                                                          color: Colors.grey[
+                                                                              300],
+                                                                          fontSize:
+                                                                              16,
+                                                                          fontWeight:
+                                                                              FontWeight.bold),
+                                                                    ),
+                                                                    writer.isVerified ||
+                                                                            writer.isDeveloper
+                                                                        ? Row(
+                                                                            crossAxisAlignment:
+                                                                                CrossAxisAlignment.start,
+                                                                            children: [
+                                                                              const SizedBox(
+                                                                                width: 5,
+                                                                              ),
+                                                                              Text(
+                                                                                String.fromCharCode(CupertinoIcons.checkmark_seal_fill.codePoint),
+                                                                                style: TextStyle(
+                                                                                  inherit: false,
+                                                                                  color: writer.isDeveloper && writer.isVerified ? kThemeColor : Colors.blue,
+                                                                                  fontSize: 15.0,
+                                                                                  fontWeight: FontWeight.w900,
+                                                                                  fontFamily: CupertinoIcons.heart.fontFamily,
+                                                                                  package: CupertinoIcons.heart.fontPackage,
+                                                                                ),
+                                                                              ),
+                                                                              SizedBox(
+                                                                                width: 10,
+                                                                              ),
+                                                                              Text(
+                                                                                timeago.format(
+                                                                                  documentSnapshot['timestamp'].toDate(),
+                                                                                ),
+                                                                                style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500, fontSize: 12),
+                                                                              ),
+                                                                            ],
+                                                                          )
+                                                                        : const SizedBox(),
+                                                                  ],
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                          Text(
+                                                            documentSnapshot[
+                                                                'content'],
+                                                            style: TextStyle(
+                                                                color: Colors
+                                                                    .grey[350],
+                                                                fontSize: 16,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500),
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 10,
+                                                          ),
+                                                          snapshot.data!
+                                                                  .data()![
+                                                                      'mediaUrl']
+                                                                  .isEmpty
+                                                              ? const SizedBox()
+                                                              : Row(
+                                                                  mainAxisSize:
+                                                                      MainAxisSize
+                                                                          .min,
+                                                                  children: [
+                                                                    Expanded(
+                                                                      child:
+                                                                          Container(
+                                                                        decoration: BoxDecoration(
+                                                                            borderRadius:
+                                                                                BorderRadius.circular(15),
+                                                                            border: Border.all(width: 1, color: Colors.grey[900]!)),
+                                                                        child:
+                                                                            GestureDetector(
+                                                                          onTap:
+                                                                              () {
+                                                                            Get.to(() =>
+                                                                                Photo(
+                                                                                  mediaUrl: snapshot.data!.data()!['mediaUrl'],
+                                                                                ));
+                                                                          },
+                                                                          child: ClipRRect(
+                                                                              borderRadius: BorderRadius.circular(15),
+                                                                              child: Image.network(
+                                                                                snapshot.data!.data()!['mediaUrl'],
+                                                                                fit: BoxFit.cover,
+                                                                              )),
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                    const SizedBox(
+                                                                      width: 20,
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                          documentSnapshot[
+                                                                      'postId']
+                                                                  .isEmpty
+                                                              ? const SizedBox()
+                                                              : FutureBuilder(
+                                                                  future: exploreRef
+                                                                      .doc(documentSnapshot[
+                                                                          'postId'])
+                                                                      .get(),
+                                                                  builder: (context,
+                                                                      snapshot) {
+                                                                    if (!snapshot
+                                                                        .hasData) {
+                                                                      return loading();
+                                                                    }
+
+                                                                    return FutureBuilder(
+                                                                        future: usersRef
+                                                                            .doc(snapshot.data!.data()![
+                                                                                'writerId'])
+                                                                            .get(),
+                                                                        builder:
+                                                                            (context,
+                                                                                writerSnapshot) {
+                                                                          if (!writerSnapshot
+                                                                              .hasData) {
+                                                                            return loading();
+                                                                          }
+                                                                          UserModel
+                                                                              writer =
+                                                                              UserModel.fromDocument(writerSnapshot.data!);
+                                                                          return Column(
+                                                                            crossAxisAlignment:
+                                                                                CrossAxisAlignment.start,
+                                                                            children: [
+                                                                              CupertinoButton(
+                                                                                padding: EdgeInsets.zero,
+                                                                                onPressed: () {
+                                                                                  final documentSnapshot = snapshot.data!.data()!;
+                                                                                  Get.to(
+                                                                                    () => PostDetailsMobile(
+                                                                                      previousPageTitle: '',
+                                                                                      postId: documentSnapshot['postId'],
+                                                                                      title: documentSnapshot['title'],
+                                                                                      thumbnailUrl: documentSnapshot['thumbnailUrl'],
+                                                                                      content: documentSnapshot['content'],
+                                                                                      writerId: documentSnapshot['writerId'],
+                                                                                      timestamp: documentSnapshot['timestamp'],
+                                                                                      views: documentSnapshot['views'],
+                                                                                      likes: documentSnapshot['likes'],
+                                                                                    ),
+                                                                                  );
+                                                                                },
+                                                                                child: Container(
+                                                                                  height: 100,
+                                                                                  margin: const EdgeInsets.only(right: 20, top: 4, left: 0),
+                                                                                  decoration: BoxDecoration(color: kDarkGreyColor, border: Border.all(width: 2, color: Colors.grey[900]!), borderRadius: BorderRadius.circular(20)),
+                                                                                  child: Row(
+                                                                                    mainAxisAlignment: MainAxisAlignment.start,
+                                                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                                                    children: [
+                                                                                      Expanded(
+                                                                                        child: Padding(
+                                                                                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                                                                          child: Column(
+                                                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                                                            children: [
+                                                                                              Row(
+                                                                                                children: [
+                                                                                                  ClipRRect(
+                                                                                                    borderRadius: BorderRadius.circular(5),
+                                                                                                    child: Image.network(
+                                                                                                      writer.imageUrl,
+                                                                                                      height: 25,
+                                                                                                      width: 25,
+                                                                                                      fit: BoxFit.cover,
+                                                                                                    ),
+                                                                                                  ),
+                                                                                                  const SizedBox(
+                                                                                                    width: 5,
+                                                                                                  ),
+                                                                                                  Text(
+                                                                                                    writer.username,
+                                                                                                    style: TextStyle(
+                                                                                                      color: Colors.grey[350],
+                                                                                                      fontWeight: FontWeight.w500,
+                                                                                                    ),
+                                                                                                  ),
+                                                                                                  writer.isVerified || writer.isDeveloper
+                                                                                                      ? Row(
+                                                                                                          children: [
+                                                                                                            const SizedBox(
+                                                                                                              width: 5,
+                                                                                                            ),
+                                                                                                            Text(
+                                                                                                              String.fromCharCode(CupertinoIcons.checkmark_seal_fill.codePoint),
+                                                                                                              style: TextStyle(
+                                                                                                                inherit: false,
+                                                                                                                color: writer.isDeveloper && writer.isVerified ? kThemeColor : Colors.blue,
+                                                                                                                fontSize: 15.0,
+                                                                                                                fontWeight: FontWeight.w900,
+                                                                                                                fontFamily: CupertinoIcons.heart.fontFamily,
+                                                                                                                package: CupertinoIcons.heart.fontPackage,
+                                                                                                              ),
+                                                                                                            ),
+                                                                                                          ],
+                                                                                                        )
+                                                                                                      : const SizedBox(),
+                                                                                                ],
+                                                                                              ),
+                                                                                              const SizedBox(
+                                                                                                height: 5,
+                                                                                              ),
+                                                                                              Row(
+                                                                                                mainAxisSize: MainAxisSize.min,
+                                                                                                children: [
+                                                                                                  Expanded(
+                                                                                                    child: Text(
+                                                                                                      snapshot.data!.data()!['title'],
+                                                                                                      overflow: TextOverflow.ellipsis,
+                                                                                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                                                                                      maxLines: 1,
+                                                                                                    ),
+                                                                                                  ),
+                                                                                                ],
+                                                                                              ),
+                                                                                              const SizedBox(
+                                                                                                height: 5,
+                                                                                              ),
+                                                                                              Row(
+                                                                                                mainAxisSize: MainAxisSize.min,
+                                                                                                children: [
+                                                                                                  Expanded(
+                                                                                                    child: Text(
+                                                                                                      snapshot.data!.data()!['content'],
+                                                                                                      style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 14),
+                                                                                                      maxLines: 1,
+                                                                                                      overflow: TextOverflow.ellipsis,
+                                                                                                    ),
+                                                                                                  ),
+                                                                                                ],
+                                                                                              ),
+                                                                                              const SizedBox(
+                                                                                                height: 5,
+                                                                                              ),
+                                                                                            ],
+                                                                                          ),
+                                                                                        ),
+                                                                                      ),
+                                                                                      const SizedBox(
+                                                                                        width: 20,
+                                                                                      ),
+                                                                                      ClipRRect(
+                                                                                        borderRadius: const BorderRadius.only(topRight: Radius.circular(18), bottomRight: Radius.circular(18)),
+                                                                                        child: Image.network(
+                                                                                          snapshot.data!.data()!['thumbnailUrl'],
+                                                                                          height: 100,
+                                                                                          width: 100,
+                                                                                          fit: BoxFit.cover,
+                                                                                        ),
+                                                                                      ),
+                                                                                    ],
+                                                                                  ),
+                                                                                ),
+                                                                              ),
+                                                                            ],
+                                                                          );
+                                                                        });
+                                                                  }),
+                                                        ],
+                                                      ),
+                                                    )
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          CupertinoButton(
+                                              padding: EdgeInsets.symmetric(
+                                                  horizontal: 20),
+                                              child: Icon(
+                                                  CupertinoIcons.clear_circled),
+                                              onPressed: () {
+                                                setState(() {
+                                                  widget.scaleId = '';
+                                                });
+                                              })
+                                        ],
+                                      ),
+                                    ),
                                   ],
                                 );
                               });

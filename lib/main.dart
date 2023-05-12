@@ -13,7 +13,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(
-    options:DefaultFirebaseOptions.currentPlatform,
+    options: DefaultFirebaseOptions.currentPlatform,
   );
 
   runApp(ChangeNotifierProvider(
@@ -32,6 +32,7 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        fontFamily: 'SFCompactRounded',
         cupertinoOverrideTheme:
             NoDefaultCupertinoThemeData(primaryColor: kThemeColor),
         primaryColor: kDarkGreyColor,

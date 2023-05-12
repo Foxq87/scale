@@ -1,52 +1,36 @@
-import 'package:cal/models/chat_item.dart';
+import 'package:cal/constants.dart';
 import 'package:cal/widgets/nav_bar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:unicons/unicons.dart';
 
-import '../constants.dart';
-import 'home.dart';
-
-class MobileMessagesTab extends StatefulWidget {
-  const MobileMessagesTab({super.key});
+class Search extends StatefulWidget {
+  const Search({super.key});
 
   @override
-  State<MobileMessagesTab> createState() => _MobileMessagesTabState();
+  State<Search> createState() => _SearchState();
 }
 
-class _MobileMessagesTabState extends State<MobileMessagesTab> {
-  @override
-  void initState() {
-    fetchData();
-    super.initState();
-  }
-
-  bool isLoading = false;
-  List<Widget> chats = [];
-  void fetchData() async {
-    setState(() {
-      isLoading = true;
-    });
-    QuerySnapshot postSnapshot = await exploreRef.get();
-    setState(() {
-      chats = postSnapshot.docs
-          .map((doc) => ChatItem(
-                userProfilePictureUrl: doc['userProfilePictureUrl'],
-                username: doc['username'],
-              ))
-          .toList();
-      isLoading = false;
-    });
-  }
-
+class _SearchState extends State<Search> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: navBar('Search', '', elevation: true,
+          leading: CupertinoButton(
+              padding: EdgeInsets.zero,
+              child: const Icon(
+                CupertinoIcons.clear,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                Get.back();
+              }),
+          backgroundColor: Colors.black),
       backgroundColor: Colors.black,
-      appBar: navBar("Chats", '',  elevation: true,),
       body: ListView(
         children: [
-          SizedBox(
+          const SizedBox(
             height: 15,
           ),
           Padding(
@@ -90,9 +74,13 @@ class _MobileMessagesTabState extends State<MobileMessagesTab> {
               ),
             ),
           ),
-          ListView(
-            shrinkWrap: true,
-            children: chats,
+          SizedBox(
+            height: 15,
+          ),
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: Colors.grey[900],
           )
         ],
       ),
